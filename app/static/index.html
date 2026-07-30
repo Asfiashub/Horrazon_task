@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>NovaCart Insight Assistant</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; padding: 20px; }
+    textarea { width: 100%; height: 60px; margin-bottom: 10px; }
+    button { padding: 8px 16px; }
+    #answer { margin-top: 20px; padding: 15px; background: #f4f4f4; border-radius: 6px; white-space: pre-wrap; }
+    #sources { margin-top: 10px; font-size: 0.9em; color: #555; }
+  </style>
+</head>
+<body>
+  <h2>NovaCart Insight Assistant</h2>
+  <textarea id="question" placeholder="Ask a business question, e.g. Why was the mechanical keyboard order refunded twice?"></textarea><br>
+  <button onclick="askQuestion()">Ask</button>
+  <div id="answer"></div>
+  <div id="sources"></div>
+
+  <script>
+    async function askQuestion() {
+      const question = document.getElementById("question").value;
+      document.getElementById("answer").innerText = "Thinking...";
+      document.getElementById("sources").innerText = "";
+
+      const response = await fetch("/query", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer novacart2026secret"
+        },
+        body: JSON.stringify({ question: question })
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        document.getElementById("answer").innerText = "Error: " + data.error;
+        return;
+      }
+
+      document.getElementById("answer").innerText = data.answer;
+      document.getElementById("sources").innerText =
+        "Sources: " + data.sources.map(s => `${s.doc_type}/${s.record_id}`).join(", ");
+    }
+  </script>
+</body>
+</html>

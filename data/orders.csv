@@ -1,0 +1,8 @@
+order_id,customer_id,product,order_date,amount,status
+ORD1001,CUST501,Wireless Mouse,2026-06-02,25.99,Delivered
+ORD1002,CUST502,Bluetooth Speaker,2026-06-03,49.99,Delivered
+ORD1003,CUST503,USB-C Hub,2026-06-04,34.50,Delivered
+ORD1004,CUST504,Laptop Stand,2026-06-05,42.00,Delivered
+ORD1005,CUST505,Mechanical Keyboard,2026-06-06,89.99,Delivered
+ORD1006,CUST506,Webcam,2026-06-07,59.99,Delivered
+ORD1002,CUST502,Bluetooth Speaker,2026-06-03,49.99,Delivered

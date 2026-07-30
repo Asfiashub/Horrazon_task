@@ -1,0 +1,6 @@
+refund_id,order_id,refund_date,reason,amount,status
+REF2001,ORD1002,2026-06-15,Item arrived damaged - packaging failure,49.99,Approved
+REF2002,ORD1005,2026-06-16,Keyboard keys unresponsive - defective unit,89.99,Approved
+REF2003,ORD1006,2026-06-18,Webcam delayed 12 days - customer cancelled,59.99,Approved
+REF2004,ORD1003,2026-06-19,Wrong item shipped,34.50,Approved
+REF2005,ORD1005,2026-06-20,Second unit also defective - possible batch issue,89.99,Approved

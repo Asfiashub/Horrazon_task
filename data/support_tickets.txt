@@ -1,0 +1,25 @@
+TICKET_ID: TCK3001
+ORDER_ID: ORD1002
+DATE: 2026-06-10
+ISSUE: Customer reports Bluetooth Speaker box was crushed on arrival. Suspect warehouse handling issue at Chicago facility.
+STATUS: Escalated to Warehouse Team
+
+TICKET_ID: TCK3002
+ORDER_ID: ORD1005
+DATE: 2026-06-14
+ISSUE: Mechanical Keyboard - multiple keys not registering input. Customer says unit felt "used" on arrival.
+STATUS: Escalated to Supplier Quality Team
+
+TICKET_ID: TCK3003
+ORDER_ID: ORD1006
+DATE: 2026-06-17
+ISSUE: Webcam shipment delayed significantly. Tracking shows package sat at Dallas warehouse for 9 days before moving.
+STATUS: Escalated to Logistics Team
+
+TICKET_ID: TCK3004
+ORDER_ID: ORD1005
+DATE: 2026-06-19
+ISSUE: Replacement Mechanical Keyboard sent to customer also defective. Same supplier batch suspected.
+STATUS: Escalated to Supplier Quality Team
+
+NOTE (outdated policy, do not follow): Old return policy allowed refunds only within 7 days of delivery. This was updated in 2025 to 30 days — this note is kept here as a deliberate stale reference for testing.
