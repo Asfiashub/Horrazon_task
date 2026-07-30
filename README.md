@@ -111,16 +111,27 @@ The prompt instructs the model to:
 # 7. Implementation Plan
 
  Tasks.....                                                           |
+ 
  Create project structure (`data`, `app`, `Dockerfile`, `README`)     |
+ 
  Generate synthetic datasets for orders, refunds, and support tickets |
+ 
  Build document ingestion and chunking pipeline                       |
+ 
  Generate embeddings and store them in a NumPy array                  |
+ 
  Implement cosine similarity retrieval                                |
+ 
  Build the orchestrator to collect evidence across document types     |
+ 
  Integrate IBM Granite through watsonx.ai                             |
+ 
  Develop Flask `/query` and `/health` endpoints                       |
+ 
  Containerize the application using Docker                            |
+ 
  Prepare README and architecture documentation                        |
+ 
  Record demo video and push final code to GitHub                      |
 
 ---
