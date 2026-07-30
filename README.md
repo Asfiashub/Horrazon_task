@@ -1,146 +1,396 @@
-# NovaCart Insight Assistant — Design & Implementation Document
+# NovaCart Insight Assistant
 
-### Horrazon AI — Round II Engineering Challenge
+A small, working **Retrieval-Augmented Generation (RAG)** prototype that answers business questions for **NovaCart Global** by retrieving and reasoning across multiple document types (orders, refunds, and support tickets) while providing evidence-backed source citations for every response.
 
-
-# 1. Problem Statement
-
-NovaCart Global's business data is spread across multiple systems such as orders, refunds, support tickets, warehouse logs, and supplier reports. Since these systems are disconnected, answering a business question like *"Why did refunds increase last month?"* requires manually checking different documents and combining information from multiple teams. This process is slow and difficult to verify.
-
-The objective of this prototype is to build a Retrieval-Augmented Generation (RAG) system that accepts natural language queries, retrieves relevant information from different document types, reasons across the retrieved evidence, and generates a final answer with source citations while indicating uncertainty whenever sufficient evidence is unavailable.
+> Built for **Horrazon AI – Round II Engineering Challenge**  
+> **Role:** AI/ML Engineer Intern (LLM & Agentic AI)
 
 ---
 
-# 2. Abstract
+# Overview
 
-For this challenge, I built a lightweight RAG prototype with a simple multi-step reasoning workflow over a synthetic dataset containing orders, refunds, and support ticket records.
+NovaCart's business data is distributed across multiple disconnected sources such as orders, refunds, support tickets, warehouse logs, and supplier reports. Answering a business question like:
 
-Instead of using a vector database or a complex agent framework, I chose an in-memory embedding index using NumPy cosine similarity because it is lightweight, reliable, and sufficient for the given dataset size. A single orchestrator function retrieves relevant information from multiple document types before sending all collected evidence to IBM Granite (via watsonx.ai) to generate the final response.
+> *"Why did refunds increase last month?"*
 
-The application is exposed through a Flask REST API (`/query` and `/health`) and containerized using Docker. My focus was on building a system that is easy to understand, explain, and extend rather than introducing unnecessary infrastructure.
+typically requires manually searching multiple systems and combining information across teams, making the process slow and difficult to verify.
+
+This project demonstrates a **Retrieval-Augmented Generation (RAG)** system that:
+
+- Accepts natural language business questions
+- Retrieves relevant evidence from multiple document types
+- Performs reasoning across the retrieved evidence
+- Generates a grounded response with source citations
+- Flags uncertainty whenever sufficient evidence is unavailable
+
+This implementation intentionally focuses on a **small synthetic dataset (17 document chunks across 3 document types)** instead of the complete enterprise-scale platform described in the challenge.
 
 ---
 
-# 3. Why I Chose This Approach
+# Why I Chose This Approach
 
-I selected this approach mainly because it builds on technologies I have already worked with.
+I intentionally built this project using technologies I already had practical experience with instead of introducing unfamiliar frameworks under a strict deadline.
 
-* I reused the Flask and IBM Granite integration from my Startup Blueprint Generator project, where prompt grounding and structured responses helped reduce hallucinations.
-* The challenge itself mentions that a single tool-using agent and a small document collection are sufficient, so using an in-memory retrieval mechanism fits the requirements without adding unnecessary complexity.
-* Rather than spending time configuring external databases or orchestration frameworks, I focused on implementing reliable retrieval, reasoning, and evidence citation.
-* Since I am already familiar with Flask, NumPy, and watsonx.ai, I can confidently explain every design decision made in this implementation.
+Key reasons behind the design:
+
+- Reused the **Flask + IBM Granite** integration pattern from my previous **Startup Blueprint Generator** project.
+- The assignment explicitly allows a **single tool-using agent** operating over **10–30 documents**, making an in-memory retrieval pipeline appropriate.
+- Focused on building a reliable retrieval → reasoning → citation workflow instead of spending time configuring external vector databases or orchestration frameworks.
+- Used technologies I could confidently explain and justify during evaluation.
 
 ---
 
-# 4. System Architecture
+# System Architecture
 
-```
-User Question
-      │
-      ▼
+```text
+User Question (UI / API)
+        │
+        ▼
 Flask API (/query)
-      │
-      ▼
-Query Embedding
-      │
-      ▼
-Cosine Similarity Search (NumPy)
-      │
-      ▼
+Bearer Token Authentication
+        │
+        ▼
+Sentence Embedding
+(sentence-transformers)
+        │
+        ▼
+Cosine Similarity Search
+(NumPy In-Memory)
+        │
+        ▼
 Top Relevant Chunks
-(Orders, Refunds, Support Tickets)
-      │
-      ▼
-Orchestrator Function
-      │
-      ▼
-IBM Granite (Grounded Prompt)
-      │
-      ▼
-Final Answer
-+ Source Citations
-+ Confidence / Uncertainty
-      │
-      ▼
-JSON Response
+Orders • Refunds • Support Tickets
+        │
+        ▼
+Python Orchestrator
+(Multi-source Evidence Retrieval)
+        │
+        ▼
+IBM Granite (watsonx.ai)
+Grounded Prompt
+        │
+        ▼
+Answer + Citations + Confidence Flag
+        │
+        ▼
+Browser UI / JSON API Response
 ```
 
 ### Retrieval Layer
 
-All documents are loaded during startup, divided into chunks, embedded once, and stored in memory. When a user submits a query, cosine similarity is used to retrieve the most relevant chunks from each document category.
+- Documents are loaded during startup.
+- Split into semantic chunks.
+- Embedded once using Sentence Transformers.
+- Stored in-memory as NumPy vectors.
+- User queries are embedded and matched using cosine similarity.
 
 ### Reasoning Layer
 
-A single Python orchestrator retrieves evidence from multiple document types before making one LLM call. This allows the model to combine information from different sources instead of answering from a single document.
+A Python orchestrator retrieves relevant evidence from:
+
+- Orders
+- Refunds
+- Support Tickets
+
+before making **one grounded LLM call**, ensuring the model reasons across multiple sources rather than answering from a single document.
 
 ### Evidence Layer
 
 The prompt instructs the model to:
 
-* cite the documents and record IDs used,
-* avoid unsupported assumptions,
-* clearly mention when information is incomplete,
-* provide an uncertainty flag if confidence is low.
+- Cite document types and record IDs
+- Avoid unsupported assumptions
+- Explicitly mention missing information
+- Flag low-confidence responses
 
 ---
 
-# 5. Previous Work Used
+# Tech Stack
 
-### Startup Blueprint Generator Agent
-- **Reused:** Flask API structure, IBM Granite integration, grounded prompting.
-- **Modified:** Replaced the startup knowledge base with NovaCart business documents and redesigned prompts for evidence-based reasoning.
+| Component | Technology |
+|-----------|------------|
+| API Framework | Flask |
+| Embeddings | sentence-transformers (`all-MiniLM-L6-v2`) |
+| Vector Search | NumPy Cosine Similarity (In-Memory) |
+| LLM | IBM Granite (`granite-4-h-small`) via watsonx.ai |
+| Alternate LLM | Groq (`llama-3.3-70b-versatile`) |
+| Data Processing | pandas |
+| Frontend | HTML + Vanilla JavaScript |
+| Deployment | Docker (CPU-only PyTorch) |
+
+---
+
+# Project Structure
+
+```text
+novacart-insight-assistant/
+│
+├── app/
+│   ├── __init__.py
+│   ├── ingest.py              # Loads and chunks documents
+│   ├── retrieve.py            # Embeddings + similarity search
+│   ├── orchestrator.py        # Multi-document reasoning
+│   ├── main.py                # Flask API + routes
+│   │
+│   └── static/
+│       └── index.html         # Browser UI
+│
+├── data/
+│   ├── orders.csv
+│   ├── refunds.csv
+│   └── support_tickets.txt
+│
+├── Dockerfile
+├── requirements.txt
+├── .env.example
+├── .gitignore
+└── README.md
+```
+
+---
+
+# Setup Instructions
+
+## 1. Clone the Repository
+
+```bash
+git clone <your-repository-url>
+cd novacart-insight-assistant
+```
+
+---
+
+## 2. Configure Environment Variables
+
+Copy `.env.example` to `.env`
+
+```env
+GRANITE_API_KEY=your_ibm_cloud_api_key
+
+WATSONX_PROJECT_ID=your_project_id
+
+WATSONX_URL=https://us-south.ml.cloud.ibm.com
+
+API_AUTH_TOKEN=choose_any_secret_token
+```
+
+Optional (Groq)
+
+```env
+GROQ_API_KEY=your_groq_api_key
+```
+
+---
+
+## 3. Run Locally
+
+Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+Run the application
+
+```bash
+python -m app.main
+```
+
+Open:
+
+```
+http://localhost:5000
+```
+
+---
+
+## 4. Run with Docker
+
+Build
+
+```bash
+docker build -t novacart-insight .
+```
+
+Run
+
+```bash
+docker run -p 5000:5000 --env-file .env novacart-insight
+```
+
+Open:
+
+```
+http://localhost:5000
+```
+
+---
+
+# API Usage
+
+## Health Endpoint
+
+```http
+GET /health
+```
+
+Example
+
+```bash
+curl http://localhost:5000/health
+```
+
+Response
+
+```json
+{
+  "status": "ok"
+}
+```
+
+---
+
+## Query Endpoint
+
+```http
+POST /query
+```
+
+Requires:
+
+- Bearer Authentication
+- Token must match `API_AUTH_TOKEN`
+
+Example
+
+```bash
+curl -X POST http://localhost:5000/query \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <API_AUTH_TOKEN>" \
+-d '{
+      "question":"Why was the mechanical keyboard order refunded twice?"
+}'
+```
+
+Example Response
+
+```json
+{
+  "question": "Why was the mechanical keyboard order refunded twice?",
+  "answer": "The mechanical keyboard order (orders/ORD1005) was refunded twice because the initial refund was issued for a defective unit, and a second refund was processed after the replacement also failed.",
+  "sources": [
+    {
+      "doc_type": "orders",
+      "record_id": "ORD1005"
+    },
+    {
+      "doc_type": "refunds",
+      "record_id": "REF2002"
+    },
+    {
+      "doc_type": "support_tickets",
+      "record_id": "TCK3004"
+    }
+  ]
+}
+```
+
+---
+
+# Dataset
+
+The project uses a **synthetic business dataset** consisting of **17 document chunks** across **3 document types**.
+
+| Document | Description |
+|-----------|-------------|
+| `orders.csv` | 7 order records (including one intentional duplicate) |
+| `refunds.csv` | 5 refund records linked through `order_id` |
+| `support_tickets.txt` | 4 support tickets plus one outdated policy note |
+
+The dataset is intentionally cross-linked through shared **order_id** values to enable **multi-hop reasoning**.
+
+### Example Reasoning Chain
+
+```
+ORD1005
+      │
+      ▼
+Support Ticket #1
+      │
+      ▼
+Refund #1
+      │
+      ▼
+Replacement Order
+      │
+      ▼
+Support Ticket #2
+      │
+      ▼
+Refund #2
+```
+
+This allows the assistant to correctly answer questions such as:
+
+> **"Why was the mechanical keyboard order refunded twice?"**
+
+---
+
+# Previous Work Reused
+
+### Startup Blueprint Generator
+
+Reused:
+
+- Flask application structure
+- IBM Granite integration
+- Grounded prompting approach
+
+Modified for:
+
+- Document retrieval
+- Evidence-backed reasoning
+- Multi-source citation
+
+---
 
 ### MedAce
-- **Reused:** Multi-format document ingestion pipeline.
-- **Modified:** Simplified the ingestion pipeline by removing chat history and retaining only document processing.
+
+Reused:
+
+- Multi-format document ingestion pipeline
+
+Simplified by removing:
+
+- Chat history
+- Conversational memory
+
+---
 
 ### SQL & Data Analytics Projects
-- **Reused:** Understanding of structured business data.
-- **Applied:** Used this experience while designing the synthetic NovaCart dataset.
----
 
-# 6. Advantages of My Approach
-
-* Uses technologies I already have experience with, making the implementation reliable.
-* No external vector database is required, reducing setup complexity.
-* Meets all the core requirements of the assignment, including retrieval, reasoning, citations, and REST APIs.
-* The retrieval module is independent, making it easy to replace the NumPy index with pgvector, Chroma, or Qdrant in the future.
+Applied prior experience with structured business datasets while designing the synthetic NovaCart data.
 
 ---
 
-# 7. Implementation Plan
+# Current Limitations
 
- Tasks.....                                                           |
- 
- Create project structure (`data`, `app`, `Dockerfile`, `README`)     |
- 
- Generate synthetic datasets for orders, refunds, and support tickets |
- 
- Build document ingestion and chunking pipeline                       |
- 
- Generate embeddings and store them in a NumPy array                  |
- 
- Implement cosine similarity retrieval                                |
- 
- Build the orchestrator to collect evidence across document types     |
- 
- Integrate IBM Granite through watsonx.ai                             |
- 
- Develop Flask `/query` and `/health` endpoints                       |
- 
- Containerize the application using Docker                            |
- 
- Prepare README and architecture documentation                        |
- 
- Record demo video and push final code to GitHub                      |
+- Aggregation/counting queries are less reliable because retrieval only searches the top-k semantic matches rather than the complete dataset.
+- Citation misattribution may occasionally occur for closely related records.
+- In-memory retrieval is suitable only for small datasets and does not scale to large document collections.
+- No reranking stage after retrieval.
+- No conversational memory between requests.
+- Authentication uses a simple API token intended only for demonstration.
+- No automated evaluation benchmark for retrieval quality.
 
 ---
 
-# 8. Current Limitations and Future Improvements
+# Future Improvements
 
-* The in-memory retrieval approach is suitable only for small datasets. For larger collections, I would use pgvector or Qdrant.
-* There is no reranking stage, which could improve retrieval accuracy for complex queries.
-* The system is stateless and does not support multi-turn conversations.
-* Authentication currently uses a simple API key and can be replaced with proper user authentication in a production environment.
-* A dedicated evaluation framework with predefined test queries and expected evidence would help measure retrieval quality more objectively.
-
+- Replace in-memory search with **pgvector** or **Qdrant**.
+- Add a reranking model after retrieval.
+- Route aggregation queries directly to SQL/pandas instead of semantic retrieval.
+- Add citation verification before returning responses.
+- Introduce conversational memory.
+- Implement production-grade authentication and authorization.
+- Build an automated evaluation framework with expected evidence sources and retrieval metrics.
